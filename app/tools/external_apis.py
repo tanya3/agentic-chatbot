@@ -33,7 +33,7 @@ else:
     logging.warning("Environment variable 'TAVILY_API_KEY' not found or empty. Tavily client could not be started.")
     tavily_error_message = "Tavily API key not set."
 
-def search_wikipedia(query: str, lang: str = "tr", sentences: int = 5) -> str:
+def search_wikipedia(query: str, lang: str = "en", sentences: int = 5) -> str:
     logging.info(f"Searching for '{query}' in Wikipedia (language={lang})...")
     wikipedia.set_lang(lang)
     try:
@@ -55,7 +55,7 @@ def search_wikipedia(query: str, lang: str = "tr", sentences: int = 5) -> str:
 wikipedia_tool = Tool(
     name="WikipediaSearch",
     func=search_wikipedia,
-    description="Used to get encyclopedic information about a specific topic, person, place, or event. It is good for definitions and general information. It performs searches in Turkish."
+    description="Used to get encyclopedic information about a specific topic, person, place, or event. It is good for definitions and general information. It performs searches in English."
 )
 
 def search_web_tavily(query: str, max_results: int = 5) -> str:

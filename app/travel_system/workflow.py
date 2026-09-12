@@ -78,7 +78,7 @@ class TravelPlanningSystem:
         Dates: {nl_date} (Calculated as {start_date} to {end_date}, Duration: {duration} days)
         Budget: {budget_amount} {budget_currency}
 
-        Provide a brief summary in TURKISH covering:
+        Provide a brief summary in ENGLISH covering:
         1. Confirmation of dates and duration.
         2. Budget amount and currency. Mention if currency conversion might be needed (if not TRY).
         3. A very brief note if the budget seems reasonable for the destination/duration (optional, simple check).
@@ -133,19 +133,19 @@ class TravelPlanningSystem:
             return {"destination_summary": error_msg, "error_message": new_error}
 
         destination_query = f"""
-        Please collect detailed travel information for the following trip and provide the result as a Turkish summary:
+        Please collect detailed travel information for the following trip and provide the result as an English summary:
         - Origin: {origin_city or 'Not specified'}
         - Destination: {destination_city}
         - Start Date: {start_date}
         - End Date: {end_date}
         - Budget Information (for reference): {budget_amount_ref} {budget_currency_ref}
 
-        Tasks & Output Structure (Use EXACT Turkish Headings):
+        Tasks & Output Structure (Use EXACT Headings):
         1. Use `search_city_info` for {destination_city}.
         2. Use `get_weather_forecast` for {destination_city} between {start_date} - {end_date}.
         3. Use `Google Hotels_with_tavily` for {destination_city} for dates {start_date} to {end_date}. Note limitations.
         4. Use `get_tomtom_map_url` with `city_name`='{destination_city}'.
-        5. Combine results under: 'Şehir Bilgileri', 'Hava Durumu/Kıyafet Önerileri', 'Otel Seçenekleri', 'Harita Görünümü'. Include map URL if available. Respond ONLY in Turkish. If a tool fails, note it politely and continue.
+        5. Combine results under: 'City Information', 'Weather/Clothing Recommendations', 'Hotel Options', 'Map View'. Include map URL if available. Respond ONLY in English. If a tool fails, note it politely and continue.
         """
 
         logging.info(f"--- [DestinationNode] Beginning of SYNCHRONOUS Prompt to be sent to Destination Agent ---")
@@ -221,7 +221,7 @@ class TravelPlanningSystem:
             pass
 
         final_prompt = f"""
-        Create a final travel plan summary in TURKISH for the user using the information below.
+        Create a final travel plan summary in ENGLISH for the user using the information below.
 
         User Request: {state.get('user_query', 'N/A')}
         Parsed Info: {json.dumps(parsed_info, ensure_ascii=False, indent=2)}
@@ -236,15 +236,15 @@ class TravelPlanningSystem:
         {destination_summary_for_prompt}
         --- End Destination Summary ---
 
-        Task: Synthesize all this information to create a plan with the following TURKISH headings:
-        1. Seyahat Özeti (Origin, Destination, Dates, Duration - From Parsed Information)
-        2. Bütçe ve Kur Bilgisi (Should be taken from Date/Budget Summary)
-        3. Hava Durumu ve Kıyafet Önerileri (Should be taken from Destination Summary)
-        4. Şehir ve Gezi Bilgileri (Should be taken from Destination Summary)
-        5. Konaklama Önerileri (Should be taken from Destination Summary, note limitations)
-        6. Harita Görünümü (Extract and include Map URL from Destination Summary)
+        Task: Synthesize all this information to create a plan with the following ENGLISH headings:
+        1. Trip Summary (Origin, Destination, Dates, Duration - From Parsed Information)
+        2. Budget & Exchange Rate Info (Should be taken from Date/Budget Summary)
+        3. Weather & Clothing Recommendations (Should be taken from Destination Summary)
+        4. City & Trip Information (Should be taken from Destination Summary)
+        5. Accommodation Recommendations (Should be taken from Destination Summary, note limitations)
+        6. Map View (Extract and include Map URL from Destination Summary)
 
-        If information is missing or an error occurred in previous steps (as indicated in the summaries), politely note this. Only compile, don't call new tools. Response should be ONLY IN TURKISH.
+        If information is missing or an error occurred in previous steps (as indicated in the summaries), politely note this. Only compile, don't call new tools. Response should be ONLY IN ENGLISH.
         """
         logging.info(f"--- [CompileNode] Beginning of SYNCHRONOUS Prompt to be sent to Coordinator Agent ---")
         logging.info(final_prompt)

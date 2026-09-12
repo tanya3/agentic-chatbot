@@ -1,6 +1,6 @@
 # Agentic AI Chatbot Project
 
-This project is a **supervisor-based multi-agent** AI chatbot designed to answer user queries on various topics. The system is built around a supervisor agent that analyzes incoming queries and routes them to the most suitable specialized agent for the task.
+This project is a **supervisor-based multi-agent** AI chatbot designed to answer user queries on various topics. The system is built around a supervisor agent that analyzes incoming queries and routes each one to the most suitable specialized agent for the task.
 
 ## Key Capabilities
 
@@ -16,10 +16,10 @@ This project is a **supervisor-based multi-agent** AI chatbot designed to answer
   
 ## Technologies Used
 
-* **Programming Language:** Python
+* **Programming Language:** Python 3.11 (3.10+ required)
 * **Orchestration & Agent Framework:** LangChain & LangGraph
 * **User Interface:** Streamlit
-* **Language Model (LLM):** Google Gemini (e.g., Gemini 1.5 Flash)
+* **Language Model (LLM):** Google Gemini (defaults to `gemini-flash-latest`, a rolling alias to Google's current recommended Flash model)
 * **Embedding Models:** intfloat/multilingual-e5-large (classic RAG) & models/embedding-001 (Agentic RAG) 
 * **Vector Database:** ChromaDB
 * **External APIs:** Tavily/DuckDuckGo, Wikipedia, Google Serper, OpenWeatherMap, TomTom Maps, ExchangeRate-API
@@ -30,7 +30,8 @@ This system aims to provide users with a comprehensive chat experience by integr
 #### Running chatbot in local environment
 * Extract the agentic-chatbot-project folder inside the .zip and make sure you are inside the folder.
 0. `git clone https://github.com/ogulcanakca/agentic-chatbot.git`
-1. `python -m venv .venv` 
+   * Requires Python 3.11 (3.10+ minimum).
+1. `python3.11 -m venv .venv` 
 2. `.venv\Scripts\activate`
 3. `pip install -r requirements.txt` 
    

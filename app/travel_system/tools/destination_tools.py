@@ -73,7 +73,7 @@ def get_coordinates(city_name: str, api_key: str) -> Dict[str, Any]:
 def get_weather_forecast(city_name: str, start_date_str: str, end_date_str: str) -> str:
     """
     OpenWeatherMap API for specified city and dates (YYYY-MM-DD) (5 days)
-    receives the weather forecast using LLM and provides an outfit recommendation in Turkish using LLM.
+    receives the weather forecast using LLM and provides an outfit recommendation in English using LLM.
     """
     api_key = os.getenv("OPENWEATHERMAP_API_KEY")
     if not api_key:
@@ -92,7 +92,7 @@ def get_weather_forecast(city_name: str, start_date_str: str, end_date_str: str)
         'lon': coords['lon'],
         'appid': api_key,
         'units': 'metric',
-        'lang': 'tr'
+        'lang': 'en'
     }
     forecast_summary = f"Weather forecast summary could not be retrieved ({city_name})."
     relevant_forecasts_str = "Detailed forecast not found."
@@ -154,7 +154,7 @@ def get_weather_forecast(city_name: str, start_date_str: str, end_date_str: str)
             logging.error("LLM instance could not be obtained for clothing suggestion.")
             suggestion_text = "Clothing suggestions could not be generated due to system error."
         else:
-            prompt = f"""Given the following weather summary, can you provide practical and brief clothing suggestions in Turkish for someone living in Turkey? Focus only on clothing suggestions, don't repeat the weather forecast. Example: "Yanınıza katmanlı giysiler, ince bir mont ve şemsiye almanız iyi olur." etc.
+            prompt = f"""Given the following weather summary, can you provide practical and brief clothing suggestions in English for a traveler? Focus only on clothing suggestions, don't repeat the weather forecast. Example: "Pack layered clothing, a light jacket, and an umbrella." etc.
 
 Weather Summary:
 {relevant_forecasts_str}

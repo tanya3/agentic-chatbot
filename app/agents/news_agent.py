@@ -91,7 +91,8 @@ def handle_news_query(state: Dict[str, Any]) -> Dict[str, Any]:
 
     logging.info("Running News Agent Executor...")
 
-    response = agent_executor.invoke({"input": query})
+    augmented_query = f"{query}\n\n(Answer in English, regardless of the language of the question or any retrieved source content.)"
+    response = agent_executor.invoke({"input": augmented_query})
 
     # The agent's final answer is found under the 'output' key
     final_answer = response.get("output")

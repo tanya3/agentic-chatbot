@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq '{hookSpecificOutput: {hookEventName: \"PostToolUse\", additionalContext: (\"File changed: \" + (.tool_input.file_path // \"unknown file\") + \". Check whether CLAUDE.md and/or README.md need updating to reflect this change (new/removed commands, architecture, behavior, dependencies). Skip if purely cosmetic/internal.\")}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
+

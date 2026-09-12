@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%
 llm_instances: Dict[Tuple, ChatGoogleGenerativeAI] = {}
 
 def get_llm(
-    model_name: str = "gemini-1.5-flash-latest", 
+    model_name: str = "gemini-flash-latest",
     temperature: float = 0.5, 
     max_output_tokens: Optional[int] = 2048,
     top_p: Optional[float] = None, 

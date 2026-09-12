@@ -1,25 +1,44 @@
-langchain
-langgraph
-langchain_google_genai
-streamlit
-chromadb
-sentence-transformers
+# Core LangChain / LangGraph stack -- pinned to the 0.3.x line.
+# LangChain 1.x moves AgentExecutor/create_openai_tools_agent to langchain-classic
+# and breaks the travel + news agents, so hold this stack until a deliberate migration.
+langchain==0.3.30
+langchain-core==0.3.86
+langchain-text-splitters==0.3.11
+langchain-community==0.3.31
+langchain_google_genai==2.1.12
+langgraph==0.6.11
+langgraph-checkpoint==2.1.2
+langgraph-prebuilt==0.6.5
+langsmith==0.4.37
+
+# App framework + vector store
+streamlit==1.50.0
+altair==5.5.0
+chromadb==1.5.9
+
+# ML / embedding stack -- pinned to avoid the pandas 3.x / transformers 5.x
+# / sentence-transformers 6.x major bumps that a fresh resolve pulls in.
+sentence-transformers==5.1.2
+transformers==4.57.6
+tokenizers==0.22.2
+torch==2.8.0
+numpy==2.0.2
+pandas==2.3.3
+scikit-learn==1.6.1
+scipy==1.13.1
 huggingface_hub
+
+# Tools / integrations
+tavily-python==0.8.1
+wikipedia
 requests
 beautifulsoup4
-python-dotenv
 lxml
-wikipedia
-langchain_community
-tavily-python
+python-dotenv
 python-dateutil
-pandas
 dateparser
 pydantic-settings
-langchain-community
 fpdf
-chromadb
-python-docx 
-
+python-docx
 tiktoken
 pypdf

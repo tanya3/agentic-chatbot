@@ -27,8 +27,8 @@ Action: The name of the tool to use. Choose one of: [{tool_names}]
 Action Input: The input/query to provide to the tool.
 Observation: The result returned by the tool.
 ... (This Thought/Action/Action Input/Observation loop can repeat until the answer is found or a limit is reached)
-Thought: Now I know the final answer and I will express it in Turkish.
-Final Answer: The final, complete, and conversational **Turkish** answer to the original question.
+Thought: Now I know the final answer and I will express it in English.
+Final Answer: The final, complete, and conversational **English** answer to the original question.
 
 Begin now!
 
@@ -50,6 +50,8 @@ Do not go beyond the context, add interpretations, or provide additional informa
 User Question:
 {query}
 
+Respond in English, even though the provided context is in Turkish — translate/paraphrase as needed.
+
 Official Gazette Documents (Context):
 ==============================
 {context}
@@ -61,7 +63,7 @@ Answer:"""
 
 from typing import List
 # Valid categories to be used for routing
-VALID_TARGET_CATEGORIES: List[str] = ["Resmi Gazete", "News", "Travel", "Belge Sorusu", "Other"]
+VALID_TARGET_CATEGORIES: List[str] = ["Resmi Gazete", "News", "Travel", "Document Question", "Other"]
 # Default category if the LLM does not return a valid category or fails
 DEFAULT_TARGET_CATEGORY: str = "Other"
 # Prompt given to the LLM to classify the query
@@ -75,7 +77,7 @@ CLASSIFICATION_PROMPT_TEMPLATE = """Your task is to analyze the user query below
 
  3.  **Travel**: Questions about travel planning, flights, hotels, destinations, itineraries, or travel tips.
 
- 4.  **Belge Sorusu**: Clearly document-related queries—either about a previously uploaded document or a follow-up referencing it (e.g., "in that document...", "regarding...", "What else does it say about X?"). *** If document context exists, this category takes priority over others. ***
+ 4.  **Document Question**: Clearly document-related queries—either about a previously uploaded document or a follow-up referencing it (e.g., "in that document...", "regarding...", "What else does it say about X?"). *** If document context exists, this category takes priority over others. ***
 
  5.  **Other**: All other queries not fitting into the above categories—casual chat ("Hi", "How are you?", "Good day"), meaningless or incomplete phrases ("asdf"), direct commands ("Write code"), jokes, or anything this system isn’t designed to answer.
 
@@ -87,22 +89,23 @@ Category: Travel
 Query: "Can you tell me about AI ethics?"
 Category: News
 Query: "What were the risks mentioned in that document?"
-Category: Belge Sorusu
+Category: Document Question
 Query: "Hello, how are you?"
 Category: Other
 Query: "Can you explain the second article in that report?"
-Category: Belge Sorusu
+Category: Document Question
 
 Now classify the following query:
 
-User Query: 
+User Query:
 "{query}"
 
-Evaluate carefully and provide ONLY and EXACTLY one of the **five** category names ('Resmi Gazete', 'News', 'Travel', 'Belge Sorusu', 'Other') as the answer. Do not include any explanation, prefix, or extra information.
+Evaluate carefully and provide ONLY and EXACTLY one of the **five** category names ('Resmi Gazete', 'News', 'Travel', 'Document Question', 'Other') as the answer. Do not include any explanation, prefix, or extra information.
 
 Category:"""
 
 RAG_PROMPT_TEMPLATE = """Answer the question using ONLY the context provided below. Do NOT go beyond the context. If the answer is not in the context, respond with: 'The information was not found in the active document.'
+Respond in English, even if the context is in another language — translate/paraphrase as needed.
 
 Context:
 {context}
@@ -113,26 +116,26 @@ Answer:"""
 
 # app/travel_system/agents/coordinator_agent.py
 
-TRAVEL_COORDINATOR_SYSTEM_MESSAGE = """You are the Travel Coordinator Agent. You are responsible for compiling information from other agents into a final, user-friendly travel plan in Turkish.
+TRAVEL_COORDINATOR_SYSTEM_MESSAGE = """You are the Travel Coordinator Agent. You are responsible for compiling information from other agents into a final, user-friendly travel plan in English.
 
 You receive summaries for:
 - Date and Budget
 - Destination Information (including City Info, Weather, Hotel Booking Links, and Map View URL)
 
 Your Task:
-Synthesize ALL provided information into a fluent and readable TURKISH travel plan. Use the following EXACT headings:
-1. Seyahat Özeti
-2. Bütçe ve Kur Bilgisi
-3. Hava Durumu ve Kıyafet Önerileri
-4. Gezilecek Yerler
-5. Konaklama Önerileri
-6. Harita Görünümü
+Synthesize ALL provided information into a fluent and readable ENGLISH travel plan. Use the following EXACT headings:
+1. Trip Summary
+2. Budget & Exchange Rate Info
+3. Weather & Clothing Recommendations
+4. Places to Visit
+5. Accommodation Recommendations
+6. Map View
 
 Important:
-- Your response MUST be ONLY the final TURKISH plan under these headings.
+- Your response MUST be ONLY the final ENGLISH plan under these headings.
 - Extract the relevant information for each heading from the provided summaries.
-- Under heading 5 ('Konaklama Önerileri'), list the hotel booking site links provided in the Destination Summary. Do not invent hotel details.
-- CRITICAL: Ensure the Map View URL (or error message about the map) from the Destination Summary is included under the 'Harita Görünümü' heading.
+- Under heading 5 ('Accommodation Recommendations'), list the hotel booking site links provided in the Destination Summary. Do not invent hotel details.
+- CRITICAL: Ensure the Map View URL (or error message about the map) from the Destination Summary is included under the 'Map View' heading.
 - If any information is missing or indicates an error (like missing links), note this politely in the relevant section.
 - You should NOT call any tools yourself. You only compile the provided text summaries.
 """
@@ -144,15 +147,15 @@ Your specific tasks include:
 
 1. Use the `get_exchange_rates_and_budget` tool to find exchange rates for the destination and assess the provided budget in local currency.
 2. Use the `calculate_travel_dates` tool to confirm travel dates (in 'YYYY-MM-DD' format) based on natural language description and duration.
-3. Combine the results from these tools into a concise Turkish summary covering confirmed travel dates, budget assessment, and key exchange rates (TRY, EUR, USD).
+3. Combine the results from these tools into a concise English summary covering confirmed travel dates, budget assessment, and key exchange rates (TRY, EUR, USD).
 
 Important:
 - Use the provided tools to get accurate information.
-- Clearly deliver the summary in Turkish.
+- Clearly deliver the summary in English.
 """
 
 
-DESTINATION_RESEARCH_AGENT_SYSTEM_MESSAGE = """You are the Destination Research Agent. Your goal is to gather travel information and present it clearly in Turkish.
+DESTINATION_RESEARCH_AGENT_SYSTEM_MESSAGE = """You are the Destination Research Agent. Your goal is to gather travel information and present it clearly in English.
 
 **Your Tasks:**
 1. Use the `search_city_info` function for the DESTINATION city.
@@ -162,8 +165,8 @@ DESTINATION_RESEARCH_AGENT_SYSTEM_MESSAGE = """You are the Destination Research 
 (If you are using the POI map tool: 4. Extract places from the text in Task 1. Call `generate_destination_map_with_pois` with the destination and places text.)
 
 **Output Requirements:**
-- Combine the results into a single, comprehensive Turkish response.
-- Structure EXACTLY with the following Turkish headings: 'Şehir Bilgileri', 'Hava Durumu/Kıyafet Önerileri', 'Otel Seçenekleri', 'Harita Görünümü'.
-- VERY IMPORTANT: Include the map tool output under the 'Harita Görünümü' heading. If there are any errors, please point them out.
-- ONLY respond in Turkish. Do not include your thoughts.
+- Combine the results into a single, comprehensive English response.
+- Structure EXACTLY with the following headings: 'City Information', 'Weather/Clothing Recommendations', 'Hotel Options', 'Map View'.
+- VERY IMPORTANT: Include the map tool output under the 'Map View' heading. If there are any errors, please point them out.
+- ONLY respond in English. Do not include your thoughts.
 """
