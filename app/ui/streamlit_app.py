@@ -11,6 +11,23 @@ if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 from app.graph import graph_app
 
+# Phrases the RAG prompts (configs/agent_config.py: PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE)
+# are instructed to emit verbatim when retrieved context doesn't answer the question.
+# Used to tell the user retrieval succeeded but was judged irrelevant, rather than
+# leaving "5 chunks retrieved" next to "not found" looking contradictory.
+_NOT_FOUND_PHRASES = (
+    "was not found in the provided documents",
+    "was not found in the active document",
+)
+
+
+def _is_not_found_answer(answer: str) -> bool:
+    if not answer:
+        return False
+    answer_lower = answer.lower()
+    return any(phrase in answer_lower for phrase in _NOT_FOUND_PHRASES)
+
+
 st.set_page_config(
     page_title="Agentic Chatbot",
     page_icon="🤖",
@@ -122,6 +139,8 @@ for message in st.session_state.chat_history:
                      logging.warning(f"Error downloading history PDF: {dl_err}")
             if message.get("context"):
                 with st.expander("🔍 Context Used (RAG)"):
+                    if _is_not_found_answer(message["content"]):
+                        st.caption("ℹ️ Context was retrieved above, but the model judged it didn't sufficiently answer your question.")
                     context_key = f"ctx_hist_{message.get('source')}_{len(st.session_state.chat_history)}_{message.get('response_time')}"
                     st.text_area("", message["context"], height=150, disabled=True, key=context_key)
 
@@ -193,6 +212,8 @@ if user_input := st.chat_input("Type your question here..."):
                          st.error("Couldn't create PDF download button.", icon="⚠️")
                 if context:
                     with st.expander("🔍 Context Used (RAG)"):
+                        if _is_not_found_answer(answer):
+                            st.caption("ℹ️ Context was retrieved above, but the model judged it didn't sufficiently answer your question.")
                         st.text_area("Context", context, height=200, disabled=True, key=f"ctx_resp_{len(st.session_state.chat_history)}")
 
         except Exception as e:
