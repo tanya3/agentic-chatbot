@@ -1,15 +1,18 @@
 # app/ui/streamlit_app.py
 
 import sys
+import hashlib
 import streamlit as st
 from pathlib import Path
 import logging
 import time
+from langchain_core.messages import HumanMessage, AIMessage
 
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 from app.graph import graph_app
+from app.core.llm import get_llm
 
 # Phrases the RAG prompts (configs/agent_config.py: PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE)
 # are instructed to emit verbatim when retrieved context doesn't answer the question.
@@ -20,12 +23,45 @@ _NOT_FOUND_PHRASES = (
     "was not found in the active document",
 )
 
+# RAG context chunks come straight from the (Turkish) source corpus, unlike the
+# synthesized answer which agents already translate to English. Translations are
+# cached per-session, keyed by content hash, since Streamlit reruns the whole
+# script on every interaction and the toggle can be flipped repeatedly.
+_CONTEXT_TRANSLATION_CACHE_KEY = "_rag_context_translations"
+
 
 def _is_not_found_answer(answer: str) -> bool:
     if not answer:
         return False
     answer_lower = answer.lower()
     return any(phrase in answer_lower for phrase in _NOT_FOUND_PHRASES)
+
+
+def _translate_context_to_english(context: str) -> str:
+    cache = st.session_state.setdefault(_CONTEXT_TRANSLATION_CACHE_KEY, {})
+    cache_key = hashlib.sha256(context.encode("utf-8")).hexdigest()
+    if cache_key in cache:
+        return cache[cache_key]
+
+    llm = get_llm(temperature=0)
+    if llm is None:
+        return "⚠️ Translation unavailable (ANTHROPIC_API_KEY not configured)."
+
+    try:
+        response = llm.invoke([
+            HumanMessage(content=(
+                "Translate the following retrieved document excerpt(s) into natural, "
+                "fluent English. Return only the translation, with no commentary or "
+                "preamble:\n\n" + context
+            ))
+        ])
+        translated = response.content if isinstance(response.content, str) else str(response.content)
+    except Exception as e:
+        logging.error(f"Error translating RAG context: {e}", exc_info=True)
+        return "⚠️ Translation failed. Showing original text below.\n\n" + context
+
+    cache[cache_key] = translated
+    return translated
 
 
 st.set_page_config(
@@ -142,7 +178,9 @@ for message in st.session_state.chat_history:
                     if _is_not_found_answer(message["content"]):
                         st.caption("ℹ️ Context was retrieved above, but the model judged it didn't sufficiently answer your question.")
                     context_key = f"ctx_hist_{message.get('source')}_{len(st.session_state.chat_history)}_{message.get('response_time')}"
-                    st.text_area("", message["context"], height=150, disabled=True, key=context_key)
+                    show_english = st.toggle("🌐 Show in English", key=f"{context_key}_lang")
+                    display_context = _translate_context_to_english(message["context"]) if show_english else message["context"]
+                    st.text_area("", display_context, height=150, disabled=True, key=context_key)
 
 if user_input := st.chat_input("Type your question here..."):
     st.session_state.chat_history.append({"role": "user", "content": user_input})
@@ -153,7 +191,6 @@ if user_input := st.chat_input("Type your question here..."):
         try:
             start_time = time.time()
 
-            from langchain_core.messages import HumanMessage, AIMessage
             formatted_history = []
             for msg in st.session_state.chat_history[:-1]:
                 if msg["role"] == "user":
@@ -214,7 +251,9 @@ if user_input := st.chat_input("Type your question here..."):
                     with st.expander("🔍 Context Used (RAG)"):
                         if _is_not_found_answer(answer):
                             st.caption("ℹ️ Context was retrieved above, but the model judged it didn't sufficiently answer your question.")
-                        st.text_area("Context", context, height=200, disabled=True, key=f"ctx_resp_{len(st.session_state.chat_history)}")
+                        show_english_resp = st.toggle("🌐 Show in English", key=f"ctx_resp_{len(st.session_state.chat_history)}_lang")
+                        display_context = _translate_context_to_english(context) if show_english_resp else context
+                        st.text_area("Context", display_context, height=200, disabled=True, key=f"ctx_resp_{len(st.session_state.chat_history)}")
 
         except Exception as e:
             logging.error(f"Error processing query: {e}", exc_info=True)
