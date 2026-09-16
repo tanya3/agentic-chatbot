@@ -8,3 +8,4 @@ app/utils/__pycache__
 app/tools/__pycache__
 app/configs/__pycache__
 .env
+plans/*.pdf
