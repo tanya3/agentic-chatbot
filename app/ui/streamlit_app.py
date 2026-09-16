@@ -55,7 +55,18 @@ def _translate_context_to_english(context: str) -> str:
                 "preamble:\n\n" + context
             ))
         ])
-        translated = response.content if isinstance(response.content, str) else str(response.content)
+        # Claude runs extended thinking by default (see app/core/llm.py), so `.content`
+        # is often a list of blocks (a "thinking" block plus a "text" block) rather than
+        # a plain string. Falling back to str(response.content) on that list dumps raw
+        # internal thinking data (including its opaque signature) into the UI.
+        if isinstance(response.content, str):
+            translated = response.content
+        else:
+            translated = "".join(
+                block.get("text", "")
+                for block in response.content
+                if isinstance(block, dict) and block.get("type") == "text"
+            )
     except Exception as e:
         logging.error(f"Error translating RAG context: {e}", exc_info=True)
         return "⚠️ Translation failed. Showing original text below.\n\n" + context
@@ -180,7 +191,11 @@ for message in st.session_state.chat_history:
                     context_key = f"ctx_hist_{message.get('source')}_{len(st.session_state.chat_history)}_{message.get('response_time')}"
                     show_english = st.toggle("🌐 Show in English", key=f"{context_key}_lang")
                     display_context = _translate_context_to_english(message["context"]) if show_english else message["context"]
-                    st.text_area("", display_context, height=150, disabled=True, key=context_key)
+                    # Streamlit only uses `value` to initialize a keyed widget on its first
+                    # render; on later reruns (e.g. flipping the toggle) it ignores `value`
+                    # and keeps whatever's already bound to that key. Suffixing the key by
+                    # language makes the toggle create a distinct widget instead of a stale one.
+                    st.text_area("", display_context, height=150, disabled=True, key=f"{context_key}_{'en' if show_english else 'orig'}")
 
 if user_input := st.chat_input("Type your question here..."):
     st.session_state.chat_history.append({"role": "user", "content": user_input})
@@ -253,7 +268,9 @@ if user_input := st.chat_input("Type your question here..."):
                             st.caption("ℹ️ Context was retrieved above, but the model judged it didn't sufficiently answer your question.")
                         show_english_resp = st.toggle("🌐 Show in English", key=f"ctx_resp_{len(st.session_state.chat_history)}_lang")
                         display_context = _translate_context_to_english(context) if show_english_resp else context
-                        st.text_area("Context", display_context, height=200, disabled=True, key=f"ctx_resp_{len(st.session_state.chat_history)}")
+                        # Same key-suffix fix as the history block above: keeps the toggle
+                        # from being stuck on the widget's first-render value.
+                        st.text_area("Context", display_context, height=200, disabled=True, key=f"ctx_resp_{len(st.session_state.chat_history)}_{'en' if show_english_resp else 'orig'}")
 
         except Exception as e:
             logging.error(f"Error processing query: {e}", exc_info=True)
