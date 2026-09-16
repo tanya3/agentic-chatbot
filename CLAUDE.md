@@ -42,6 +42,10 @@ python scripts/generate_embeddings.py  # embed processed data into ChromaDB (dat
 
 Required `.env` keys (loaded via `configs/api_config.py`, dotenv): `ANTHROPIC_API_KEY` (hard-required, everything breaks without it), plus `TAVILY_API_KEY`, `SERPER_API_KEY`, `OPENWEATHERMAP_API_KEY`, `EXCHANGERATE_API_KEY`, and a TomTom key for map URLs used by the travel system.
 
+## Git workflow
+
+Create a feature branch for any change, however small, rather than committing directly to `main`. Open a PR once the branch is pushed. Claude must not merge a PR it created without explicit approval from the human user for that specific merge, even if checks pass — ask first. If a bug is found while testing an already-open PR's branch, fix it on that same branch rather than starting a new one. After a PR merges, sync any other in-progress branches with the updated `main` before continuing work on them.
+
 ## Architecture
 
 ### Main graph (`app/graph.py`)
