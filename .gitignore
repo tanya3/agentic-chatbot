@@ -9,3 +9,5 @@ app/tools/__pycache__
 app/configs/__pycache__
 .env
 plans/*.pdf
+evals/results/
+.DS_Store

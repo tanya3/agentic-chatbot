@@ -21,6 +21,10 @@ def classify_query(state: Dict[str, Any]) -> Dict[str, Any]:
     # Initially, we set it to the default category
     classification_decision = DEFAULT_TARGET_CATEGORY
     source_info = "Supervisor"
+    # Pre-fallback LLM output and token usage, exposed for eval purposes
+    # (unused by the graph/UI, which only reads "classification")
+    raw_llm_output = None
+    usage = None
 
     # If there is no valid query, set category to 'Other'
     if not query or not query.strip():
@@ -44,6 +48,8 @@ def classify_query(state: Dict[str, Any]) -> Dict[str, Any]:
             # Send the prompt to the LLM
             response = llm.invoke(prompt)
             llm_output = response.content.strip()
+            raw_llm_output = llm_output
+            usage = getattr(response, "usage_metadata", None)
             logging.info(f"Raw LLM classification output: '{llm_output}'")
 
             # Ensure LLM only returns a valid category name
@@ -73,6 +79,12 @@ def classify_query(state: Dict[str, Any]) -> Dict[str, Any]:
             classification_decision = DEFAULT_TARGET_CATEGORY
             source_info += f" (Error: {type(e).__name__})"
 
-    # Return with the 'classification' key added to the LangGraph state
+    # Return with the 'classification' key added to the LangGraph state.
+    # raw_llm_output/usage are additive, eval-only keys: the graph and UI
+    # only ever read "classification", so these are safe to ignore elsewhere.
     logging.info(f"Supervisor completed. Final Classification Result: '{classification_decision}'")
-    return {"classification": classification_decision}
+    return {
+        "classification": classification_decision,
+        "raw_llm_output": raw_llm_output,
+        "usage": usage,
+    }
