@@ -1,6 +1,6 @@
 # app/travel_system/agents/destination_agent.py
 
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from ..tools.destination_tools import (
     search_city_info, 
@@ -41,7 +41,7 @@ def create_destination_agent() -> AgentExecutor:
         logging.error("LLM could not be created for Destination Agent!")
         raise ValueError("LLM could not be initialized for Destination Agent.")
 
-    destination_agent_runnable = create_openai_tools_agent(
+    destination_agent_runnable = create_tool_calling_agent(
         llm=llm_instance,
         tools=destination_tools,
         prompt=destination_prompt

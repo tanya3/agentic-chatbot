@@ -117,16 +117,16 @@ class TravelPDFSaver:
             if not os.path.exists(regular_font_path_str):
                  logging.error(f"ERROR: Regular font NOT FOUND before add_font: {regular_font_path_str}")
                  raise FileNotFoundError(f"Cannot find regular font right before add_font: {regular_font_path_str}")
-            pdf.add_font('DejaVu', '', regular_font_path_str, uni=True) 
-            
+            pdf.add_font('DejaVu', '', regular_font_path_str)
+
             logging.info(f"Bold Path for add_font: {bold_font_path_str}")
             if not os.path.exists(bold_font_path_str):
                  logging.error(f"ERROR: Bold font NOT FOUND before add_font: {bold_font_path_str}")
                  raise FileNotFoundError(f"Cannot find bold font right before add_font: {bold_font_path_str}")
-            pdf.add_font('DejaVu', 'B', bold_font_path_str, uni=True) 
-            
+            pdf.add_font('DejaVu', 'B', bold_font_path_str)
+
             # Using normal font for italics
-            pdf.add_font('DejaVu', 'I', regular_font_path_str, uni=True)
+            pdf.add_font('DejaVu', 'I', regular_font_path_str)
             
             logging.info("fpdf.add_font calls made successfully (with absolute path).")
         except Exception as font_err:
@@ -277,7 +277,7 @@ class TravelPDFSaver:
 
         try:
             logging.info(f"Saving PDF as '{output_path_str}'...")
-            pdf.output(output_path_str, 'F') 
+            pdf.output(output_path_str)
             print(f"Travel plan saved as '{output_path_str}'.") 
             
             # Clean up temporary files

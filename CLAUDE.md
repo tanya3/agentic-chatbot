@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A **supervisor-based multi-agent chatbot** built with LangChain/LangGraph, served via Streamlit. A supervisor node classifies each user query and routes it to one specialized agent (Resmi Gazete RAG, News, Travel, Agentic RAG over an uploaded doc, or Fallback). All LLM calls go through Google Gemini. The underlying source data is Turkish (it RAGs over the Turkish "Resmi Gazete" official gazette and Turkish news sources), but the UI and all agent prompts instruct **English** output — agents translate/synthesize from the Turkish context into English answers rather than passing it through. Keep new prompts and user-facing text in English unless told otherwise.
+A **supervisor-based multi-agent chatbot** built with LangChain/LangGraph, served via Streamlit. A supervisor node classifies each user query and routes it to one specialized agent (Resmi Gazete RAG, News, Travel, Agentic RAG over an uploaded doc, or Fallback). All LLM calls go through the Claude API (Anthropic). The underlying source data is Turkish (it RAGs over the Turkish "Resmi Gazete" official gazette and Turkish news sources), but the UI and all agent prompts instruct **English** output — agents translate/synthesize from the Turkish context into English answers rather than passing it through. Keep new prompts and user-facing text in English unless told otherwise.
 
 ## Commands
 
@@ -40,7 +40,7 @@ python scripts/process_data.py         # chunk raw data -> data/processed/*.json
 python scripts/generate_embeddings.py  # embed processed data into ChromaDB (data/embeddings/)
 ```
 
-Required `.env` keys (loaded via `configs/api_config.py`, dotenv): `GEMINI_API_KEY` (hard-required, everything breaks without it), plus `TAVILY_API_KEY`, `SERPER_API_KEY`, `OPENWEATHERMAP_API_KEY`, `EXCHANGERATE_API_KEY`, and a TomTom key for map URLs used by the travel system.
+Required `.env` keys (loaded via `configs/api_config.py`, dotenv): `ANTHROPIC_API_KEY` (hard-required, everything breaks without it), plus `TAVILY_API_KEY`, `SERPER_API_KEY`, `OPENWEATHERMAP_API_KEY`, `EXCHANGERATE_API_KEY`, and a TomTom key for map URLs used by the travel system.
 
 ## Architecture
 
@@ -48,7 +48,7 @@ Required `.env` keys (loaded via `configs/api_config.py`, dotenv): `GEMINI_API_K
 
 A single `StateGraph[AgentState]` (state schema in `app/core/state.py`) with one entry point and five terminal nodes (each routes straight to `END` — no multi-turn loop at this level):
 
-1. `NODE_SUPERVISOR` → `app/agents/supervisor.py::classify_query` — calls Gemini at `temperature=0.0` to classify the query into one of `VALID_TARGET_CATEGORIES` (`configs/agent_config.py`). Falls back to `DEFAULT_TARGET_CATEGORY` on any LLM error or unparseable output — never let classification raise.
+1. `NODE_SUPERVISOR` → `app/agents/supervisor.py::classify_query` — calls Claude to classify the query into one of `VALID_TARGET_CATEGORIES` (`configs/agent_config.py`). Falls back to `DEFAULT_TARGET_CATEGORY` on any LLM error or unparseable output — never let classification raise.
 2. `route_based_on_classification` (in `app/agents/agentic_rag_agent.py`, despite the name) dispatches on `state["classification"]`, with a `route_directly_to_agentic_rag` flag in state that bypasses classification entirely (used when the UI already knows the user uploaded a document).
 3. Leaf nodes, each `add_edge(..., END)`:
    - `resmi_gazete_agent.py` — RAG over the pre-built Resmi Gazete ChromaDB collection
@@ -61,7 +61,7 @@ Node name strings and category constants (`NODE_SUPERVISOR`, `NODE_RESMI_GAZETE`
 
 ### Shared core
 
-- `app/core/llm.py::get_llm()` — the only way agents should construct an LLM. Caches `ChatGoogleGenerativeAI` instances by `(model_name, temperature, max_output_tokens, top_p, top_k, kwargs)` tuple; returns `None` (not an exception) if `GEMINI_API_KEY` is missing, so callers must check for `None`. Default `model_name` is `"gemini-flash-latest"` (a rolling alias Google keeps pointed at a current model) — deliberately not a pinned dated model, since pinned Gemini model names get deprecated/retired over time and start 404ing. Note the free tier is quota-limited per model (as low as 5 requests/minute and low daily caps on some models), which is easy to exhaust while testing multiple agents in a session.
+- `app/core/llm.py::get_llm()` — the only way agents should construct an LLM. Caches `ChatAnthropic` instances by `(model_name, temperature, max_output_tokens, top_p, top_k, kwargs)` tuple; returns `None` (not an exception) if `ANTHROPIC_API_KEY` is missing, so callers must check for `None`. Default `model_name` is `"claude-sonnet-5"`, a pinned current-generation Claude model ID. `temperature`/`top_p`/`top_k` are accepted in the signature for call-site compatibility but are **not** forwarded to Claude — Claude models run extended thinking by default, and the API rejects sampling params while thinking is active, so these are silently ignored rather than disabling thinking to preserve them. `max_output_tokens` maps to Claude's `max_tokens`.
 - `app/core/state.py::AgentState` — the `TypedDict` threaded through every top-level graph node (`query`, `classification`, `context`, `answer`, `source`, `pdf_path`, `uploaded_file_data`/`uploaded_file_name`, `route_directly_to_agentic_rag`).
 - `app/storage/database.py` — ChromaDB access layer, module-level cached `client`/`embedding_function` singletons. `get_or_create_collection()` always sets `hnsw:space: cosine`. Two different embedding models are used depending on collection: `intfloat/multilingual-e5-large` (default, `MODEL_NAME` in `configs/app_config.py`) for the pre-built Resmi Gazete/news corpus, vs. `models/embedding-001` for ad hoc uploaded-doc RAG — don't mix them across a collection.
 

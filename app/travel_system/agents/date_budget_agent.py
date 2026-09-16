@@ -1,6 +1,6 @@
 # app/travel_system/agents/date_budget_agent.py
 
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from ..tools.date_tools import calculate_travel_dates
 from ..tools.budget_tools import get_exchange_rates_and_budget
@@ -32,7 +32,7 @@ def create_date_budget_agent() -> AgentExecutor:
          logging.error("LLM could not be created for Date Budget Agent!")
          raise ValueError("LLM could not be initialized for Date Budget Agent.")
          
-    date_budget_agent = create_openai_tools_agent(
+    date_budget_agent = create_tool_calling_agent(
         llm=llm_instance,
         tools=date_budget_tools,
         prompt=date_budget_prompt

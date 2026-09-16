@@ -1,11 +1,13 @@
 # Core LangChain / LangGraph stack -- pinned to the 0.3.x line.
 # LangChain 1.x moves AgentExecutor/create_openai_tools_agent to langchain-classic
 # and breaks the travel + news agents, so hold this stack until a deliberate migration.
+# langchain-anthropic is pinned to the matching 0.3.x line for the same reason --
+# its 1.x releases require langchain-core>=1.6.2.
 langchain==0.3.30
 langchain-core==0.3.86
 langchain-text-splitters==0.3.11
 langchain-community==0.3.31
-langchain_google_genai==2.1.12
+langchain-anthropic==0.3.22
 langgraph==0.6.11
 langgraph-checkpoint==2.1.2
 langgraph-prebuilt==0.6.5
@@ -30,6 +32,7 @@ huggingface_hub
 
 # Tools / integrations
 tavily-python==0.8.1
+ddgs==9.16.0
 wikipedia
 requests
 beautifulsoup4
@@ -38,7 +41,7 @@ python-dotenv
 python-dateutil
 dateparser
 pydantic-settings
-fpdf
+fpdf2==2.8.8
 python-docx
 tiktoken
 pypdf

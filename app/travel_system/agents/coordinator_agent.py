@@ -1,6 +1,6 @@
 # app/travel_system/agents/coordinator_agent.py
 
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from app.core.llm import get_llm
 import logging
@@ -30,7 +30,7 @@ def create_coordinator_agent() -> AgentExecutor:
          logging.error("LLM could not be created for Coordinator Agent!")
          raise ValueError("LLM could not be initialized for Coordinator Agent.")
 
-    coordinator_agent = create_openai_tools_agent(
+    coordinator_agent = create_tool_calling_agent(
         llm=llm_instance,
         tools=coordinator_tools,
         prompt=coordinator_prompt

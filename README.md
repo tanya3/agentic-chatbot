@@ -19,8 +19,8 @@ This project is a **supervisor-based multi-agent** AI chatbot designed to answer
 * **Programming Language:** Python 3.11 (3.10+ required)
 * **Orchestration & Agent Framework:** LangChain & LangGraph
 * **User Interface:** Streamlit
-* **Language Model (LLM):** Google Gemini (defaults to `gemini-flash-latest`, a rolling alias to Google's current recommended Flash model)
-* **Embedding Models:** intfloat/multilingual-e5-large (classic RAG) & models/embedding-001 (Agentic RAG) 
+* **Language Model (LLM):** Claude API (Anthropic) (defaults to `claude-sonnet-5`)
+* **Embedding Models:** intfloat/multilingual-e5-large (classic RAG & Agentic RAG)
 * **Vector Database:** ChromaDB
 * **External APIs:** Tavily/DuckDuckGo, Wikipedia, Google Serper, OpenWeatherMap, TomTom Maps, ExchangeRate-API
 * **Containerization:** Docker & Docker Compose

@@ -76,7 +76,7 @@ catch exceptions and return an error answer, like the existing agents.
 Conventions to copy from siblings:
 - Path bootstrap: `project_root = Path(__file__).resolve().parents[2]; sys.path.append(str(project_root))` before importing `app.*` / `configs`.
 - LLM: only via `from app.core.llm import get_llm`. `get_llm()` returns **`None`** if
-  `GEMINI_API_KEY` is missing — check for it (`llm = get_llm(); if llm is None: return {"answer": "...", "source": "... (Error: LLM unavailable)"}`).
+  `ANTHROPIC_API_KEY` is missing — check for it (`llm = get_llm(); if llm is None: return {"answer": "...", "source": "... (Error: LLM unavailable)"}`).
 - `logging.basicConfig(...)` line matching the other modules.
 - Handle missing/empty `query` up front with an error answer.
 
@@ -121,10 +121,10 @@ def <handler>(state: Dict[str, Any]) -> Dict[str, Any]:
         return {"answer": "Information was found, but synthesizing the answer failed.", "context": context, "source": source_info + " (Error: LLM)"}
 ```
 
-New Chroma collection notes (see CLAUDE.md / `app/storage/database.py`): the pre-built
-corpus uses `intfloat/multilingual-e5-large`; ad-hoc uploaded-doc RAG uses
-`models/embedding-001`. Pick one per collection and don't mix. You will also need a
-pipeline/step to populate the collection.
+New Chroma collection notes (see CLAUDE.md / `app/storage/database.py`): both the
+pre-built corpus and ad-hoc uploaded-doc RAG use the local `intfloat/multilingual-e5-large`
+sentence-transformers model (Claude has no embeddings API). Pick one embedding model per
+collection and don't mix. You will also need a pipeline/step to populate the collection.
 
 ### Template B — ReAct agent with tools (model after `news_agent.py`)
 
@@ -188,7 +188,7 @@ source .venv/bin/activate
 python -c "from app.graph import graph_app; ns=graph_app.get_graph().nodes; assert '<node>' in ns, ns; print('node OK:', sorted(ns))"
 # 2. Constants line up:
 python -c "from configs.app_config import NODE_<CONST>, <CATEGORY_CONST>; from configs.agent_config import VALID_TARGET_CATEGORIES as v; assert <CATEGORY_CONST> in v, v; print('config OK')"
-# 3. Classifier routes a representative query (needs GEMINI_API_KEY; costs a quota call):
+# 3. Classifier routes a representative query (needs ANTHROPIC_API_KEY; costs a real API call):
 python -c "from app.agents.supervisor import classify_query; print(classify_query({'query': '<representative query>'}))"
 # 4. End-to-end through the graph:
 python -c "from app.graph import graph_app; print(graph_app.invoke({'query': '<representative query>'})['source'])"
@@ -201,7 +201,7 @@ didn't cannibalise another category's routing).
 ## Gotchas
 
 - **Classifier is an LLM** — adding the category to `VALID_TARGET_CATEGORIES` is not
-  enough; the prompt section + few-shot example are what actually make Gemini emit the
+  enough; the prompt section + few-shot example are what actually make Claude emit the
   label. Test with real queries.
 - **`state["classification"]` holds the category string, not the node name.** The router
   translates category → `NODE_*`. Keep those two layers straight.
@@ -209,6 +209,7 @@ didn't cannibalise another category's routing).
   LangGraph raises at compile time.
 - **`get_llm()` can return `None`.** Guard it.
 - **Leaf nodes must not raise** — classification and routing must never crash the graph.
-- **Gemini free tier is quota-limited** (~5 req/min on some models). The verify steps
-  above make LLM calls; space them out if you hit 429s.
+- **Claude API calls cost real money** (no free quota tier like Gemini had). The verify
+  steps above make LLM calls; be mindful of that, and watch for 429s if you hit
+  rate limits.
 - **English only** for prompts and user-facing text, even though source data is Turkish.

@@ -2,7 +2,7 @@
 
 import os
 import logging
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from typing import Optional, Dict, Tuple, Any
 from pathlib import Path
 import sys
@@ -11,27 +11,32 @@ project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 
 try:
-    from configs import api_config 
+    from configs import api_config
 except ImportError:
     logging.error("Module configs.api_config not found! Environment variables might not be loaded.")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
 
-llm_instances: Dict[Tuple, ChatGoogleGenerativeAI] = {}
+llm_instances: Dict[Tuple, ChatAnthropic] = {}
 
 def get_llm(
-    model_name: str = "gemini-flash-latest",
-    temperature: float = 0.5, 
+    model_name: str = "claude-sonnet-5",
+    temperature: float = 0.5,
     max_output_tokens: Optional[int] = 2048,
-    top_p: Optional[float] = None, 
-    top_k: Optional[int] = None, 
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
     **kwargs: Any
-) -> Optional[ChatGoogleGenerativeAI]:
+) -> Optional[ChatAnthropic]:
+    # Note: temperature/top_p/top_k are accepted for call-site compatibility but are
+    # NOT forwarded to Claude below. Claude models run extended thinking by default,
+    # and the API rejects sampling params while thinking is active. Rather than
+    # disabling thinking (which has documented failure modes on some models), we
+    # leave thinking on and simply drop these params.
 
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
-    if not gemini_api_key:
-        logging.error("Environment variable 'GEMINI_API_KEY' not found or is empty!")
-        return None 
+    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not anthropic_api_key:
+        logging.error("Environment variable 'ANTHROPIC_API_KEY' not found or is empty!")
+        return None
 
     cache_key = (
         model_name, temperature, max_output_tokens, top_p, top_k,
@@ -42,16 +47,13 @@ def get_llm(
         logging.debug(f"Returning LLM instance from cache (Config: {cache_key})")
         return llm_instances[cache_key]
 
-    logging.info(f"Creating new LLM instance: Model={model_name}, Temp={temperature}...")
+    logging.info(f"Creating new LLM instance: Model={model_name}...")
 
     try:
-        llm = ChatGoogleGenerativeAI(
+        llm = ChatAnthropic(
             model=model_name,
-            google_api_key=gemini_api_key,
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-            top_p=top_p,
-            top_k=top_k,
+            api_key=anthropic_api_key,
+            max_tokens=max_output_tokens,
             **kwargs
         )
         llm_instances[cache_key] = llm

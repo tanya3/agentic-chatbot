@@ -16,6 +16,24 @@ from .tools.parsing_tools import parse_travel_query
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
 
+def extract_agent_output_text(output: Any) -> str:
+    """Normalize an AgentExecutor's 'output' value to a plain string.
+
+    ChatAnthropic (unlike the previous Gemini wrapper) can return AIMessage.content
+    as a list of content blocks (e.g. [{"type": "text", "text": "..."}]) even for a
+    plain text completion once tools are bound via create_tool_calling_agent, instead
+    of collapsing a single text block down to a bare string.
+    """
+    if isinstance(output, str):
+        return output
+    if isinstance(output, list):
+        return "".join(
+            block.get("text", "")
+            for block in output
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+    return str(output)
+
 class TravelPlanState(TypedDict):
     user_query: str
     origin: Optional[str]
@@ -89,7 +107,7 @@ class TravelPlanningSystem:
             agent_input = {"input": date_budget_query}
             response = self.date_budget_agent.invoke(agent_input)
             logging.info(f"[DateBudgetNode] Agent Raw Response: {response}")
-            summary = response.get("output", "Date/Budget summary error.")
+            summary = extract_agent_output_text(response.get("output", "Date/Budget summary error."))
             logging.info(f"[DateBudgetNode] Agent Summary Result: {summary}")
             error_in_summary = "error" in summary.lower() or "hata" in summary.lower()
             return {"date_budget_summary": summary, "error_message": state.get("error_message") or (f"DateBudget Agent Error: {summary}" if error_in_summary else None)}
@@ -159,7 +177,7 @@ class TravelPlanningSystem:
 
             logging.debug(f"[DestinationNode] Agent Raw Response: {response}")
 
-            summary = response.get("output", "Destination summary error.")
+            summary = extract_agent_output_text(response.get("output", "Destination summary error."))
             logging.info(f"[DestinationNode] Agent Summary Result: {summary}")
 
             error_in_summary = False
@@ -257,7 +275,7 @@ class TravelPlanningSystem:
 
             logging.debug(f"[CompileNode] Coordinator Raw Response: {final_response}")
 
-            final_output = final_response.get("output", "Final plan generation failed.")
+            final_output = extract_agent_output_text(final_response.get("output", "Final plan generation failed."))
             logging.info(f"[CompileNode] Agent Final Plan: {final_output}")
             return {"final_plan": final_output}
         except Exception as e:

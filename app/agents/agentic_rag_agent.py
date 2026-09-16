@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import streamlit as st 
 from langchain_community.vectorstores import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
@@ -15,7 +15,7 @@ from langchain_core.output_parsers import StrOutputParser
 from app.core.llm import get_llm
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
-from configs.app_config import (LOADER_MAPPING)
+from configs.app_config import (LOADER_MAPPING, MODEL_NAME)
 from configs.agent_config import (RAG_PROMPT_TEMPLATE)
 
 def handle_uploaded_doc_query(state: dict) -> Dict[str, Any]:
@@ -59,11 +59,7 @@ def handle_uploaded_doc_query(state: dict) -> Dict[str, Any]:
              logging.warning("No meaningful text chunks could be extracted from the document.")
              return {"answer": "No meaningful content could be extracted from the active document.", "source": source_info}
 
-        gemini_api_key = os.getenv("GEMINI_API_KEY")
-        if not gemini_api_key:
-            logging.error("GEMINI_API_KEY environment variable not found!")
-            return {"answer": "The process cannot continue because the API key is not configured.", "source": "Agentic RAG (Error: API Key)"}
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
+        embeddings = SentenceTransformerEmbeddings(model_name=MODEL_NAME)
 
         logging.info("Creating in-memory Chroma vector store...")
         vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings)
